@@ -13,8 +13,6 @@ struct point3D {
 	float x;
 	float y;
 	float z;
-};
-struct TexCoord2D {
 	float s;
 	float t;
 };
@@ -22,8 +20,6 @@ struct TexCoord2D {
 class Objet {
 
 public:
-	char nom[40];
-
 	unsigned int nbsommets;
 	unsigned int nbfaces;
 
@@ -31,7 +27,6 @@ public:
 
 	struct point3D *lpoints;
 	struct indexedface *lfaces;
-	struct TexCoord2D *ltexCoords;
 	struct point3D min;
 	struct point3D max;
 
@@ -40,7 +35,6 @@ public:
 	~Objet();
 	void charge_OFF(const char *);
 	void affiche();
-
 };
 
 #endif

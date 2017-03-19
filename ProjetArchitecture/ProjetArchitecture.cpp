@@ -1,20 +1,31 @@
+#include <iostream>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
-#include <iostream>
+
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 #include "Shader.h"
+#include "Texture.h"
 #include "Objet.h"
 
 //Objects
-
 Objet cible;
 
 //Buffers
-
 GLuint vao;
 GLuint vbo_vertex;
-GLuint vbo_color;
 GLuint ebo;
+
+//Properties
+const GLuint WIDTH = 800, HEIGHT = 600;
+
+//Shaders
+Shader * shader;
+
+//Textures
+Texture textureCible;
 
 void key_callback(GLFWwindow * window, int key, int scancode, int action, int mode)
 {
@@ -28,47 +39,59 @@ void GeomInit()
 	cible.charge_OFF("100x100pointsUV.off");
 
 	glGenVertexArrays(1,&vao);
+	glGenBuffers(1, &vbo_vertex);
+	glGenBuffers(1, &ebo);
+
 	glBindVertexArray(vao);
 
 	//Position
-	glGenBuffers(1, &vbo_vertex);
 	glBindBuffer(GL_ARRAY_BUFFER, vbo_vertex);
-	glBufferData(GL_ARRAY_BUFFER, cible.nbsommets * 3 * sizeof(float), (float *)cible.lpoints, GL_STATIC_DRAW);
-
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
-
-	//Couleur
-	float* couleur = new float[cible.nbsommets*4];
-	for (unsigned int i = 0; i < cible.nbsommets * 4; i+=4)
-	{
-		couleur[i] = 1.0f;
-		couleur[i + 1] = 0.0f;
-		couleur[i + 2] = 0.0f;
-		couleur[i + 3] = 1.0f;
-	}
-
-	glGenBuffers(1, &vbo_color);
-	glBindBuffer(GL_ARRAY_BUFFER, vbo_color);
-	glBufferData(GL_ARRAY_BUFFER, cible.nbsommets * 4 * sizeof(float), couleur, GL_STATIC_DRAW);
-	delete[] couleur;
-
-	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 0, 0);
-
+	glBufferData(GL_ARRAY_BUFFER, cible.nbsommets * 5 * sizeof(float), (float *)cible.lpoints, GL_STATIC_DRAW);
+	//Position attribute
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)0);
+	glEnableVertexAttribArray(0);
+	//Texcoord attribute
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
+	glEnableVertexAttribArray(1);
 	//Element Buffer
-	glGenBuffers(1, &ebo);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, cible.nbfaces * 3 * sizeof(unsigned int), (unsigned int *)cible.lfaces, GL_STATIC_DRAW);
-
-	glEnableVertexAttribArray(0);
-	glEnableVertexAttribArray(1);
-
+	
 	glBindVertexArray(0);
 
-
+	//Chargement de la texture
+	bool load_success = textureCible.load("texture.jpg");
+	if (!load_success)
+		std::cerr << "ERROR::TEXTURE::LOADING_FAILURE" << std::endl;
+	textureCible.define_filtering(GL_LINEAR,GL_LINEAR);
+	textureCible.define_looping(GL_CLAMP_TO_EDGE,GL_CLAMP_TO_EDGE);
+	glGenerateMipmap(GL_TEXTURE_2D);
+	textureCible.unuse();
 }
 
 void render()
 {
+	glActiveTexture(GL_TEXTURE0);
+	textureCible.use();
+	glUniform1i(glGetUniformLocation(shader->Program, "textureCible"), 0);
+
+	shader->use();
+
+	glm::mat4 model;
+	model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
+	glm::mat4 view;
+	view = glm::lookAt(glm::vec3(0.0f, 0.0f, 250.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	glm::mat4 projection;
+	projection = glm::perspective(45.0f, (GLfloat)WIDTH / (GLfloat)HEIGHT, 0.1f, 300.0f);
+
+	GLint modelLoc = glGetUniformLocation(shader->Program, "model");
+	GLint viewLoc = glGetUniformLocation(shader->Program, "view");
+	GLint projectionLoc = glGetUniformLocation(shader->Program, "projection");
+
+	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+	glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+
 	glBindVertexArray(vao);
 
 	glDrawElements(GL_TRIANGLES, cible.nbfaces * 3, GL_UNSIGNED_INT, 0);
@@ -84,45 +107,46 @@ int main()
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 
-	GLFWwindow* window = glfwCreateWindow(848, 480, "Projet Architecture", nullptr, nullptr);
+	GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Projet Architecture", nullptr, nullptr);
 	if (window == nullptr)
 	{
-		std::cout << "Failed" << std::endl;
+		std::cerr << "ERROR::GLFW::WINDOW_CREATION_FAILURE" << std::endl;
 		glfwTerminate();
 		return -1;
 	}
 	glfwMakeContextCurrent(window);
 
+	glfwSetKeyCallback(window, key_callback);
 
 	glewExperimental = GL_TRUE;
 	if (glewInit() != GLEW_OK)
 	{
-		std::cout << "Failed" << std::endl;
+		std::cerr << "ERROR::GLEW::INIT_FAILURE" << std::endl;
 		return -1;
 	}
 
+	glViewport(0, 0, WIDTH, HEIGHT);
 
-	int width, height;
-	glfwGetFramebufferSize(window, &width, &height);
-	glViewport(0, 0, width, height);
-	glfwSetKeyCallback(window, key_callback);
-	
-	Shader shader("vertexShader.glsl", "fragmentShader.glsl");
+	//OpenGL Enables
+	glEnable(GL_DEPTH_TEST);
 
 	GeomInit();
 
-	
+	glClearColor(0.8f, 0.8f, 0.8f, 1.0f);
 
-	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+	shader = new Shader("vertexShader.glsl", "fragmentShader.glsl");
 
 	while (!glfwWindowShouldClose(window))
 	{
-		glClear(GL_COLOR_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glfwPollEvents();
-		shader.use();
 		render();
 		glfwSwapBuffers(window);
 	}
+
+	glDeleteVertexArrays(1, &vao);
+	glDeleteBuffers(1, &vbo_vertex);
+	glDeleteBuffers(1, &ebo);
 
 	glfwTerminate();
 
