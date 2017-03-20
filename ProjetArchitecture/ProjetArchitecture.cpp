@@ -29,6 +29,7 @@ GLdouble MOUSE_X = 0, MOUSE_Y = 0;
 
 //Shaders
 Shader * shader;
+Shader * nightShader;
 
 //Textures
 Texture textureCible;
@@ -48,6 +49,10 @@ void key_callback(GLFWwindow * window, int key, int scancode, int action, int mo
 {
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, GL_TRUE);
+	else if (key == GLFW_KEY_N && action == GLFW_PRESS)
+	{
+		nightVision = !nightVision;
+	}
 }
 
 void mouse_move_callback(GLFWwindow* window, double xpos, double ypos)
@@ -97,7 +102,7 @@ void GeomInit()
 	glGenBuffers(1, &ebo_projectile);
 	//Projectile Vertex Array Object
 	glBindVertexArray(vao_projectile);
-	
+
 	glBindBuffer(GL_ARRAY_BUFFER, vbo_projectile);
 	glBufferData(GL_ARRAY_BUFFER, projectile.nbsommets * 3 * sizeof(float), (float *)projectile.lpoints, GL_STATIC_DRAW);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
