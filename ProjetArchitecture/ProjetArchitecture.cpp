@@ -1,4 +1,5 @@
 #include <iostream>
+#include <ctime>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
@@ -32,7 +33,15 @@ Shader * shader;
 //Textures
 Texture textureCible;
 
-void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode)
+//Déplacement aléatoire
+float timeBeginMove = -1;
+float moveTime;
+float xOffset = 0;
+float yOffset = 0;
+float xOffsetTemp;
+float yOffsetTemp;
+
+void key_callback(GLFWwindow * window, int key, int scancode, int action, int mode)
 {
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, GL_TRUE);
@@ -77,7 +86,7 @@ void GeomInit()
 	//Element Buffer
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_target);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, cible.nbfaces * 3 * sizeof(unsigned int), (unsigned int *)cible.lfaces, GL_STATIC_DRAW);
-	
+
 	glBindVertexArray(0);
 
 	glGenVertexArrays(1, &vao_projectile);
@@ -125,6 +134,43 @@ void render()
 	GLint viewLoc = glGetUniformLocation(shader->Program, "view");
 	GLint projectionLoc = glGetUniformLocation(shader->Program, "projection");
 
+	float elapsedTime = glfwGetTime();
+	if (timeBeginMove == -1)
+	{
+		timeBeginMove = elapsedTime;
+		moveTime = (rand() % 1000) / 100.0;
+		xOffsetTemp = ((rand() % 1000) / 5.0) - 100;
+		yOffsetTemp = ((rand() % 1000) / 5.0) - 100;
+	}
+	else
+	{
+		if (elapsedTime - timeBeginMove > moveTime)
+		{
+			timeBeginMove = elapsedTime;
+			moveTime = (rand() % 1000) / 500.0;
+			xOffset += xOffsetTemp;
+			yOffset += yOffsetTemp;
+			xOffsetTemp = ((rand() % 1000) / 5.0) - 100;
+			yOffsetTemp = ((rand() % 1000) / 5.0) - 100;
+			if (((xOffset + xOffsetTemp) > 140) || ((xOffset + xOffsetTemp) < -140))
+			{
+				xOffsetTemp = -xOffsetTemp;
+			}
+			if (((yOffset + yOffsetTemp) > 100) || ((yOffset + yOffsetTemp) < -100))
+			{
+				yOffsetTemp = -yOffsetTemp;
+			}
+		}
+		else
+		{
+			GLint xOffsetLoc = glGetUniformLocation(shader->Program, "xOffset");
+			GLint yOffsetLoc = glGetUniformLocation(shader->Program, "yOffset");
+
+			glUniform1f(xOffsetLoc, xOffset + (((elapsedTime - timeBeginMove) / moveTime) * xOffsetTemp));
+			glUniform1f(yOffsetLoc, yOffset + (((elapsedTime - timeBeginMove) / moveTime) * yOffsetTemp));
+		}
+	}
+
 	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 	glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
@@ -139,6 +185,8 @@ void render()
 
 int main()
 {
+	srand(time(NULL));
+
 	glfwInit();
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);

@@ -8,9 +8,12 @@ out vec2 TexCoord;
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
+uniform float xOffset;
+uniform float yOffset;
 
 void main()
 {
-	gl_Position = projection * view * model * vec4(position,1.0f);
+	vec4 newPosition = vec4(position.x + xOffset, position.y + yOffset, position.z, 1.0f);
+	gl_Position = projection * view * model * newPosition;
 	TexCoord = vec2(texCoord.x,1.0 - texCoord.y);
 }
