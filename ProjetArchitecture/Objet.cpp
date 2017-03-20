@@ -18,7 +18,7 @@ Objet::~Objet() {
 	delete[] lfaces;
 }
 
-void Objet::charge_OFF(const char * nom_fichier)
+void Objet::loadOFF(const char * nom_fichier,bool loadUV)
 {
 	unsigned int i;
 	std::ifstream fichier(nom_fichier, std::ios::in);
@@ -42,23 +42,49 @@ void Objet::charge_OFF(const char * nom_fichier)
 		lpoints = new struct point3D[nbsommets];
 
 		//Remplissage de la liste de points
-		for (i = 0; i<nbsommets; i++)
+		if (loadUV)
 		{
-			fichier >> lpoints[i].x >> lpoints[i].y >> lpoints[i].z >> lpoints[i].s >> lpoints[i].t;
-			if (min.x>lpoints[i].x)
-				min.x = lpoints[i].x;
-			if (min.y>lpoints[i].y)
-				min.y = lpoints[i].y;
-			if (min.z>lpoints[i].z)
-				min.z = lpoints[i].z;
+			for (i = 0; i<nbsommets; i++)
+			{
+				fichier >> lpoints[i].x >> lpoints[i].y >> lpoints[i].z >> lpoints[i].s >> lpoints[i].t;
+				if (min.x>lpoints[i].x)
+					min.x = lpoints[i].x;
+				if (min.y>lpoints[i].y)
+					min.y = lpoints[i].y;
+				if (min.z>lpoints[i].z)
+					min.z = lpoints[i].z;
 
-			if (max.x<lpoints[i].x)
-				max.x = lpoints[i].x;
-			if (max.y<lpoints[i].y)
-				max.y = lpoints[i].y;
-			if (max.z<lpoints[i].z)
-				max.z = lpoints[i].z;
+				if (max.x<lpoints[i].x)
+					max.x = lpoints[i].x;
+				if (max.y<lpoints[i].y)
+					max.y = lpoints[i].y;
+				if (max.z<lpoints[i].z)
+					max.z = lpoints[i].z;
+			}
 		}
+		else
+		{
+			for (i = 0; i<nbsommets; i++)
+			{
+				fichier >> lpoints[i].x >> lpoints[i].y >> lpoints[i].z;
+				lpoints[i].s = 0;
+				lpoints[i].t = 0;
+				if (min.x>lpoints[i].x)
+					min.x = lpoints[i].x;
+				if (min.y>lpoints[i].y)
+					min.y = lpoints[i].y;
+				if (min.z>lpoints[i].z)
+					min.z = lpoints[i].z;
+
+				if (max.x<lpoints[i].x)
+					max.x = lpoints[i].x;
+				if (max.y<lpoints[i].y)
+					max.y = lpoints[i].y;
+				if (max.z<lpoints[i].z)
+					max.z = lpoints[i].z;
+			}
+		}
+		
 
 		//Remplissage de la liste de faces
 		for (i = 0; i<nbfaces; i++)

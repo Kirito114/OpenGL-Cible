@@ -33,7 +33,7 @@ public:
 	Objet();
 	Objet(const Objet&);
 	~Objet();
-	void charge_OFF(const char *);
+	void loadOFF(const char *nom_fichier,bool loadUV);
 	void affiche();
 };
 

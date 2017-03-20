@@ -12,14 +12,19 @@
 
 //Objects
 Objet cible;
+Objet projectile;
 
 //Buffers
-GLuint vao;
-GLuint vbo_vertex;
-GLuint ebo;
+GLuint vao_target;
+GLuint vbo_target;
+GLuint ebo_target;
+GLuint vao_projectile;
+GLuint vbo_projectile;
+GLuint ebo_projectile;
 
 //Properties
 const GLuint WIDTH = 800, HEIGHT = 600;
+GLdouble MOUSE_X = 0, MOUSE_Y = 0;
 
 //Shaders
 Shader * shader;
@@ -27,25 +32,41 @@ Shader * shader;
 //Textures
 Texture textureCible;
 
-void key_callback(GLFWwindow * window, int key, int scancode, int action, int mode)
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode)
 {
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, GL_TRUE);
 }
 
+void mouse_move_callback(GLFWwindow* window, double xpos, double ypos)
+{
+	//std::cerr << "GLFW::MOUSE::POSITION " << xpos << " " << ypos << std::endl;
+	MOUSE_X = xpos;
+	MOUSE_Y = ypos;
+}
+
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
+{
+	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
+	{
+		std::cerr << "GLFW::MOUSE::BUTTON_PRESSED::LEFT_BUTTON" << std::endl;
+	}
+}
+
 void GeomInit()
 {
 	//On charge la cible
-	cible.charge_OFF("100x100pointsUV.off");
+	cible.loadOFF("100x100pointsUV.off",true);
+	projectile.loadOFF("sphere.off", false);
 
-	glGenVertexArrays(1,&vao);
-	glGenBuffers(1, &vbo_vertex);
-	glGenBuffers(1, &ebo);
-
-	glBindVertexArray(vao);
+	glGenVertexArrays(1,&vao_target);
+	glGenBuffers(1, &vbo_target);
+	glGenBuffers(1, &ebo_target);
+	//Target Vertex Array Object
+	glBindVertexArray(vao_target);
 
 	//Position
-	glBindBuffer(GL_ARRAY_BUFFER, vbo_vertex);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo_target);
 	glBufferData(GL_ARRAY_BUFFER, cible.nbsommets * 5 * sizeof(float), (float *)cible.lpoints, GL_STATIC_DRAW);
 	//Position attribute
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)0);
@@ -54,9 +75,25 @@ void GeomInit()
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
 	glEnableVertexAttribArray(1);
 	//Element Buffer
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_target);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, cible.nbfaces * 3 * sizeof(unsigned int), (unsigned int *)cible.lfaces, GL_STATIC_DRAW);
 	
+	glBindVertexArray(0);
+
+	glGenVertexArrays(1, &vao_projectile);
+	glGenBuffers(1, &vbo_projectile);
+	glGenBuffers(1, &ebo_projectile);
+	//Projectile Vertex Array Object
+	glBindVertexArray(vao_projectile);
+	
+	glBindBuffer(GL_ARRAY_BUFFER, vbo_projectile);
+	glBufferData(GL_ARRAY_BUFFER, projectile.nbsommets * 3 * sizeof(float), (float *)projectile.lpoints, GL_STATIC_DRAW);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
+	glEnableVertexAttribArray(0);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_projectile);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, projectile.nbfaces * 3 * sizeof(unsigned int), (unsigned int *)projectile.lfaces, GL_STATIC_DRAW);
+
 	glBindVertexArray(0);
 
 	//Chargement de la texture
@@ -92,7 +129,8 @@ void render()
 	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 	glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
-	glBindVertexArray(vao);
+	//Render target
+	glBindVertexArray(vao_target);
 
 	glDrawElements(GL_TRIANGLES, cible.nbfaces * 3, GL_UNSIGNED_INT, 0);
 
@@ -115,8 +153,12 @@ int main()
 		return -1;
 	}
 	glfwMakeContextCurrent(window);
-
+	//Callbacks
 	glfwSetKeyCallback(window, key_callback);
+	glfwSetCursorPosCallback(window, mouse_move_callback);
+	glfwSetMouseButtonCallback(window, mouse_button_callback);
+
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
 	glewExperimental = GL_TRUE;
 	if (glewInit() != GLEW_OK)
@@ -144,9 +186,9 @@ int main()
 		glfwSwapBuffers(window);
 	}
 
-	glDeleteVertexArrays(1, &vao);
-	glDeleteBuffers(1, &vbo_vertex);
-	glDeleteBuffers(1, &ebo);
+	glDeleteVertexArrays(1, &vao_target);
+	glDeleteBuffers(1, &vbo_target);
+	glDeleteBuffers(1, &ebo_target);
 
 	glfwTerminate();
 
