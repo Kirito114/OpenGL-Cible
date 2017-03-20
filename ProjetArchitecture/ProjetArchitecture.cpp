@@ -29,7 +29,8 @@ GLdouble MOUSE_X = 0, MOUSE_Y = 0;
 
 //Shaders
 Shader * shader;
-Shader * nightShader;
+Shader * nightGreenShader;
+Shader * nightRedShader;
 
 //Textures
 Texture textureCible;
@@ -44,6 +45,8 @@ float yOffsetTemp;
 
 //Vision nocturne
 bool nightVision = false;
+enum VisionMode {red, green, normal};
+VisionMode visionMode = VisionMode::normal;
 
 void key_callback(GLFWwindow * window, int key, int scancode, int action, int mode)
 {
@@ -51,7 +54,18 @@ void key_callback(GLFWwindow * window, int key, int scancode, int action, int mo
 		glfwSetWindowShouldClose(window, GL_TRUE);
 	else if (key == GLFW_KEY_N && action == GLFW_PRESS)
 	{
-		nightVision = !nightVision;
+		if (visionMode == VisionMode::red)
+		{
+			visionMode = VisionMode::green;
+		}
+		else if (visionMode == VisionMode::green)
+		{
+			visionMode = VisionMode::normal;
+		}
+		else
+		{
+			visionMode = VisionMode::red;
+		}
 	}
 }
 
@@ -129,9 +143,13 @@ void render()
 	textureCible.use();
 	glUniform1i(glGetUniformLocation(shader->Program, "textureCible"), 0);
 
-	if (nightVision)
+	if (visionMode == VisionMode::green)
 	{
-		nightShader->use();
+		nightGreenShader->use();
+	}
+	else if (visionMode == VisionMode::red)
+	{
+		nightRedShader->use();
 	}
 	else
 	{
@@ -241,7 +259,8 @@ int main()
 	glClearColor(0, 0, 0, 1);
 
 	shader = new Shader("vertexShader.glsl", "fragmentShader.glsl");
-	nightShader = new Shader("vertexShader.glsl", "nightFragmentShader.glsl");
+	nightGreenShader = new Shader("vertexShader.glsl", "nightGreenFragmentShader.glsl");
+	nightRedShader = new Shader("vertexShader.glsl", "nightRedFragmentShader.glsl");
 
 	while (!glfwWindowShouldClose(window))
 	{
