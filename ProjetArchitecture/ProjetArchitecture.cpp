@@ -2,6 +2,7 @@
 #include <ctime>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
+#include <stddef.h>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -25,12 +26,14 @@ GLuint ebo_projectile;
 
 //Properties
 const GLuint WIDTH = 800, HEIGHT = 600;
-GLdouble MOUSE_X = 0, MOUSE_Y = 0;
+GLdouble MOUSE_X = 0, MOUSE_Y = 0, MOUSE_PRESSED_X = 0, MOUSE_PRESSED_Y = 0;
 
 //Shaders
-Shader * shader;
+Shader * normalShader;
 Shader * nightGreenShader;
 Shader * nightRedShader;
+Shader * shaderUVLess;
+Shader * shader;
 
 //Textures
 Texture textureCible;
@@ -47,6 +50,10 @@ float yOffsetTemp;
 bool nightVision = false;
 enum VisionMode {red, green, normal};
 VisionMode visionMode = VisionMode::normal;
+
+//Projectile movement
+bool shoot_trigered = false;
+float trigger_time = 0;
 
 void key_callback(GLFWwindow * window, int key, int scancode, int action, int mode)
 {
@@ -80,7 +87,12 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
 	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
 	{
-		std::cerr << "GLFW::MOUSE::BUTTON_PRESSED::LEFT_BUTTON" << std::endl;
+		//std::cerr << "GLFW::MOUSE::BUTTON_PRESSED::LEFT_BUTTON" << std::endl;
+		std::cerr << "GLFW::MOUSE::POSITION " << MOUSE_X << " " << MOUSE_Y << std::endl;
+		shoot_trigered = true;
+		trigger_time = glfwGetTime();
+		MOUSE_PRESSED_X = MOUSE_X;
+		MOUSE_PRESSED_Y = MOUSE_Y;
 	}
 }
 
@@ -110,21 +122,26 @@ void GeomInit()
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, cible.nbfaces * 3 * sizeof(unsigned int), (unsigned int *)cible.lfaces, GL_STATIC_DRAW);
 
 	glBindVertexArray(0);
-
+	
 	glGenVertexArrays(1, &vao_projectile);
 	glGenBuffers(1, &vbo_projectile);
 	glGenBuffers(1, &ebo_projectile);
+
 	//Projectile Vertex Array Object
 	glBindVertexArray(vao_projectile);
 
 	glBindBuffer(GL_ARRAY_BUFFER, vbo_projectile);
-	glBufferData(GL_ARRAY_BUFFER, projectile.nbsommets * 3 * sizeof(float), (float *)projectile.lpoints, GL_STATIC_DRAW);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
+	
+	glBufferData(GL_ARRAY_BUFFER, projectile.nbsommets * 5 * sizeof(float), (float *)projectile.lpoints, GL_STATIC_DRAW);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (GLvoid*)0);
 	glEnableVertexAttribArray(0);
+
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_projectile);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, projectile.nbfaces * 3 * sizeof(unsigned int), (unsigned int *)projectile.lfaces, GL_STATIC_DRAW);
-
+	
 	glBindVertexArray(0);
 
 	//Chargement de la texture
@@ -139,28 +156,32 @@ void GeomInit()
 
 void render()
 {
+
+	glm::mat4 model;
+	glm::mat4 view = glm::lookAt(glm::vec3(0.0f, 0.0f, 250.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	glm::mat4 projection = glm::perspective(45.0f, (GLfloat)WIDTH / (GLfloat)HEIGHT, 0.1f, 300.0f);
+
+	if (visionMode == VisionMode::green)
+	{
+		shader = nightGreenShader;
+	}
+	else if (visionMode == VisionMode::red)
+	{
+		shader = nightRedShader;
+	}
+	else
+	{
+		shader = normalShader;
+	}
+
 	glActiveTexture(GL_TEXTURE0);
 	textureCible.use();
 	glUniform1i(glGetUniformLocation(shader->Program, "textureCible"), 0);
 
-	if (visionMode == VisionMode::green)
-	{
-		nightGreenShader->use();
-	}
-	else if (visionMode == VisionMode::red)
-	{
-		nightRedShader->use();
-	}
-	else
-	{
-		shader->use();
-	}
+	shader->use();
 
-	glm::mat4 model;
 	model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
-	glm::mat4 view;
 	view = glm::lookAt(glm::vec3(0.0f, 0.0f, 250.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	glm::mat4 projection;
 	projection = glm::perspective(45.0f, (GLfloat)WIDTH / (GLfloat)HEIGHT, 0.1f, 300.0f);
 
 	GLint modelLoc = glGetUniformLocation(shader->Program, "model");
@@ -214,6 +235,32 @@ void render()
 	glDrawElements(GL_TRIANGLES, cible.nbfaces * 3, GL_UNSIGNED_INT, 0);
 
 	glBindVertexArray(0);
+
+	//A ameliorer
+	if (shoot_trigered)
+	{
+		float elapsed_time = glfwGetTime() - trigger_time;
+		if (200 - 120.0*elapsed_time < 0)
+			shoot_trigered = false;
+		model = glm::mat4();
+		model = glm::translate(model, glm::vec3(MOUSE_PRESSED_X-WIDTH/2.0, MOUSE_PRESSED_Y-HEIGHT/2.0, 200 - 120.0f*elapsed_time));
+
+		shader = shaderUVLess;
+		glm::vec3 color(1.0f, 0.0f, 0.0f);
+		shader->use();
+
+		glUniformMatrix4fv(glGetUniformLocation(shader->Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+		glUniformMatrix4fv(glGetUniformLocation(shader->Program, "view"), 1, GL_FALSE, glm::value_ptr(view));
+		glUniformMatrix4fv(glGetUniformLocation(shader->Program, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+		glUniform3f(glGetUniformLocation(shader->Program, "color"), color.x, color.y, color.z);
+
+		//Render projectile
+		glBindVertexArray(vao_projectile);
+
+		glDrawElements(GL_TRIANGLES, projectile.nbfaces * 3, GL_UNSIGNED_INT, 0);
+
+		glBindVertexArray(0);
+	}
 }
 
 int main()
@@ -256,11 +303,12 @@ int main()
 	GeomInit();
 
 	//glClearColor(0.8f, 0.8f, 0.8f, 1.0f);
-	glClearColor(0, 0, 0, 1);
+	glClearColor(0.2, 0.2, 0.2, 1);
 
-	shader = new Shader("vertexShader.glsl", "fragmentShader.glsl");
+	normalShader = new Shader("vertexShader.glsl", "fragmentShader.glsl");
 	nightGreenShader = new Shader("vertexShader.glsl", "nightGreenFragmentShader.glsl");
 	nightRedShader = new Shader("vertexShader.glsl", "nightRedFragmentShader.glsl");
+	shaderUVLess = new Shader("vertexShaderUVLess.glsl", "fragmentShaderUVLess.glsl");
 
 	while (!glfwWindowShouldClose(window))
 	{

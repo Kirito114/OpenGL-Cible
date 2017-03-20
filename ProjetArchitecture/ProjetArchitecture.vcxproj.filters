@@ -73,6 +73,9 @@
     <None Include="fragmentShaderUVLess.glsl">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="nightFragmentShader.glsl">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Image Include="texture.jpg">

@@ -110,10 +110,10 @@ void Objet::affiche()
 	std::cerr << "Objet : " << nbsommets << " sommets " << nbfaces << " faces" << std::endl;
 
 	std::cerr << "SOMMETS" << std::endl;
-	for (i = 0; i<20; i++)
+	for (i = 0; i<nbsommets; i++)
 		std::cerr << "Sommets " << i << "[" << std::setprecision(5) << lpoints[i].x << " " << lpoints[i].y << " " << lpoints[i].z << "] " << lpoints[i].s << " " << lpoints[i].t << std::endl;
 
-	std::cerr << "FACES" << std::endl;
+	/*std::cerr << "FACES" << std::endl;
 	for (i = 0; i<nbfaces; i++)
-		std::cerr << "Face " << i << " " << lfaces[i].S1 << " " << lfaces[i].S2 << " " << lfaces[i].S3 << std::endl;
+		std::cerr << "Face " << i << " " << lfaces[i].S1 << " " << lfaces[i].S2 << " " << lfaces[i].S3 << std::endl;*/
 }

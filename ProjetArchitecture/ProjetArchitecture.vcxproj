@@ -169,6 +169,7 @@
     <None Include="100x100pointsUV.off" />
     <None Include="fragmentShader.glsl" />
     <None Include="fragmentShaderUVLess.glsl" />
+    <None Include="nightFragmentShader.glsl" />
     <None Include="sphere.off" />
     <None Include="vertexShader.glsl" />
     <None Include="vertexShaderUVLess.glsl" />
