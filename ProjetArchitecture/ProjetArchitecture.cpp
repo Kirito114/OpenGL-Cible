@@ -129,7 +129,7 @@ void render()
 	textureCible.use();
 	glUniform1i(glGetUniformLocation(shader->Program, "textureCible"), 0);
 
-	if (!nightVision)
+	if (nightVision)
 	{
 		nightShader->use();
 	}
@@ -237,7 +237,8 @@ int main()
 
 	GeomInit();
 
-	glClearColor(0.8f, 0.8f, 0.8f, 1.0f);
+	//glClearColor(0.8f, 0.8f, 0.8f, 1.0f);
+	glClearColor(0, 0, 0, 1);
 
 	shader = new Shader("vertexShader.glsl", "fragmentShader.glsl");
 	nightShader = new Shader("vertexShader.glsl", "nightFragmentShader.glsl");
