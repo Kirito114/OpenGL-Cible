@@ -7,6 +7,5 @@ uniform sampler2D textureCible;
 
 void main()
 {
-	color = texture(textureCible,TexCoord);
-	//color = vec4(TexCoord.x,TexCoord.y,0.0,1.0);
+	color = texture(textureCible.x * 0.1, textureCible.y * 0.65, textureCible.z * 0.2 ,TexCoord);
 }

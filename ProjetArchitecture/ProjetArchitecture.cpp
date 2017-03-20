@@ -36,6 +36,9 @@ float yOffset = 0;
 float xOffsetTemp;
 float yOffsetTemp;
 
+//Vision nocturne
+bool nightVision = false;
+
 void key_callback(GLFWwindow * window, int key, int scancode, int action, int mode)
 {
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
@@ -84,7 +87,14 @@ void render()
 	textureCible.use();
 	glUniform1i(glGetUniformLocation(shader->Program, "textureCible"), 0);
 
-	shader->use();
+	if (!nightVision)
+	{
+		nightShader->use();
+	}
+	else
+	{
+		shader->use();
+	}
 
 	glm::mat4 model;
 	model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
@@ -183,6 +193,7 @@ int main()
 	glClearColor(0.8f, 0.8f, 0.8f, 1.0f);
 
 	shader = new Shader("vertexShader.glsl", "fragmentShader.glsl");
+	nightShader = new Shader("vertexShader.glsl", "nightFragmentShader.glsl");
 
 	while (!glfwWindowShouldClose(window))
 	{
