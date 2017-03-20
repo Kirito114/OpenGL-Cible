@@ -64,6 +64,15 @@
     <None Include="100x100pointsUV.off">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="sphere.off">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="vertexShaderUVLess.glsl">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="fragmentShaderUVLess.glsl">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Image Include="texture.jpg">
