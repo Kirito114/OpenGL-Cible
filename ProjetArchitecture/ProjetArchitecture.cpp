@@ -56,19 +56,18 @@ bool wasTouched = false;
 
 //Vision nocturne
 bool nightVision = false;
-enum VisionMode {red, green, normal};
+enum VisionMode {normal,red, green};
 VisionMode visionMode = VisionMode::normal;
 
 //Projectile movement
 float last_frame_time = 0;
 std::vector<glm::vec3> projectiles;
+std::vector<glm::vec3> projectiles_direction_vector;
 
 glm::vec3 getWorldPosition()
 {
 	float mouseX = MOUSE_PRESSED_X / (WIDTH * 0.5f) - 1.0f;
 	float mouseY = MOUSE_PRESSED_Y / (HEIGHT * 0.5f) - 1.0f;
-
-	std::cerr << mouseX << " " << mouseY << std::endl;
 
 	glm::mat4 proj = glm::perspective(45.0f, GLfloat(WIDTH) / GLfloat(HEIGHT), 0.1f, 300.0f);
 	glm::mat4 view = glm::lookAt(glm::vec3(0.0f, 0.0f, 250.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
@@ -111,14 +110,14 @@ void mouse_move_callback(GLFWwindow* window, double xpos, double ypos)
 
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
-	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
+	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS || action == GLFW_RELEASE)
 	{
 		//std::cerr << "GLFW::MOUSE::POSITION " << MOUSE_X << " " << MOUSE_Y << std::endl;
 		MOUSE_PRESSED_X = MOUSE_X;
 		MOUSE_PRESSED_Y = MOUSE_Y;
 		glm::vec3 world_pos = getWorldPosition();
-		std::cerr << world_pos.x << " " << world_pos.y << " " << world_pos.z << std::endl;
-		projectiles.push_back(glm::vec3(world_pos.x,world_pos.y, 200));
+		projectiles.push_back(glm::vec3(0,0, 200));
+		projectiles_direction_vector.push_back(glm::vec3(world_pos.x, world_pos.y, 0));
 	}
 }
 
@@ -191,19 +190,17 @@ void render()
 
 	if (visionMode == VisionMode::green)
 	{
-		//shader = nightGreenShader;
 		vision_mode = 2;
 	}
 	else if (visionMode == VisionMode::red)
 	{
-		//shader = nightRedShader;
 		vision_mode = 1;
 	}
 	else
 	{
-		//shader = normalShader;
 		vision_mode = 0;
 	}
+
 	shader = normalShader;
 	shader->use();
 
@@ -298,6 +295,9 @@ void render()
 	glm::vec3 color(1.0f, 0.0f, 0.0f);
 	shader->use();
 
+	visionModeLoc = glGetUniformLocation(shader->Program, "vision_mode");
+	glUniform1i(visionModeLoc, vision_mode);
+
 	glUniformMatrix4fv(glGetUniformLocation(shader->Program, "view"), 1, GL_FALSE, glm::value_ptr(view));
 	glUniformMatrix4fv(glGetUniformLocation(shader->Program, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
 	glUniform3f(glGetUniformLocation(shader->Program, "color"), color.x, color.y, color.z);
@@ -308,8 +308,8 @@ void render()
 		model = glm::mat4();
 		model = glm::translate(model, projectiles.at(i));
 
-		projectiles.at(i).x += projectiles.at(i).x*elapsed_time;
-		projectiles.at(i).y += projectiles.at(i).y*elapsed_time;
+		projectiles.at(i).x += projectiles_direction_vector.at(i).x*elapsed_time*40;
+		projectiles.at(i).y += projectiles_direction_vector.at(i).y*elapsed_time*40;
 		projectiles.at(i).z += -70 * elapsed_time;
 
 
@@ -329,6 +329,7 @@ void render()
 				nbFramesVibrate = 300;
 			}
 			projectiles.erase(projectiles.begin()+i);
+			projectiles_direction_vector.erase(projectiles_direction_vector.begin() + i);
 		}
 	}
 	glBindVertexArray(0);
