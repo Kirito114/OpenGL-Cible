@@ -3,6 +3,7 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <stddef.h>
+#include <vector>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -52,8 +53,8 @@ enum VisionMode {red, green, normal};
 VisionMode visionMode = VisionMode::normal;
 
 //Projectile movement
-bool shoot_trigered = false;
-float trigger_time = 0;
+float last_frame_time = 0;
+std::vector<glm::vec3> projectiles;
 
 void key_callback(GLFWwindow * window, int key, int scancode, int action, int mode)
 {
@@ -89,10 +90,9 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 	{
 		//std::cerr << "GLFW::MOUSE::BUTTON_PRESSED::LEFT_BUTTON" << std::endl;
 		std::cerr << "GLFW::MOUSE::POSITION " << MOUSE_X << " " << MOUSE_Y << std::endl;
-		shoot_trigered = true;
-		trigger_time = glfwGetTime();
 		MOUSE_PRESSED_X = MOUSE_X;
 		MOUSE_PRESSED_Y = MOUSE_Y;
+		projectiles.push_back(glm::vec3((MOUSE_PRESSED_X-WIDTH/2.0)/5.5, (HEIGHT/2.0-MOUSE_PRESSED_Y)/5.5, 200));
 	}
 }
 
@@ -245,31 +245,41 @@ void render()
 
 	glBindVertexArray(0);
 
-	//A ameliorer
-	if (shoot_trigered)
-	{
-		float elapsed_time = glfwGetTime() - trigger_time;
-		if (200 - 120.0*elapsed_time < 0)
-			shoot_trigered = false;
-		model = glm::mat4();
-		model = glm::translate(model, glm::vec3((MOUSE_PRESSED_X-WIDTH/2.0)/5.5*elapsed_time, (HEIGHT/2.0 - MOUSE_PRESSED_Y)/5.5*elapsed_time, 200 - 100.0f*elapsed_time));
+	float elapsed_time = glfwGetTime() - last_frame_time;
+	last_frame_time = glfwGetTime();
 
-		shader = shaderUVLess;
-		glm::vec3 color(1.0f, 0.0f, 0.0f);
-		shader->use();
+	shader = shaderUVLess;
+	glm::vec3 color(1.0f, 0.0f, 0.0f);
+	shader->use();
+
+	glUniformMatrix4fv(glGetUniformLocation(shader->Program, "view"), 1, GL_FALSE, glm::value_ptr(view));
+	glUniformMatrix4fv(glGetUniformLocation(shader->Program, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+	glUniform3f(glGetUniformLocation(shader->Program, "color"), color.x, color.y, color.z);
+
+	glBindVertexArray(vao_projectile);
+	for (unsigned i = 0; i < projectiles.size(); i++)
+	{
+		model = glm::mat4();
+		model = glm::translate(model, projectiles.at(i));
+
+		projectiles.at(i).x += 0;
+		projectiles.at(i).y += 0;
+		projectiles.at(i).z += -70 * elapsed_time;
+		
 
 		glUniformMatrix4fv(glGetUniformLocation(shader->Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-		glUniformMatrix4fv(glGetUniformLocation(shader->Program, "view"), 1, GL_FALSE, glm::value_ptr(view));
-		glUniformMatrix4fv(glGetUniformLocation(shader->Program, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
-		glUniform3f(glGetUniformLocation(shader->Program, "color"), color.x, color.y, color.z);
-
+		
 		//Render projectile
-		glBindVertexArray(vao_projectile);
-
 		glDrawElements(GL_TRIANGLES, projectile.nbfaces * 3, GL_UNSIGNED_INT, 0);
-
-		glBindVertexArray(0);
 	}
+	glBindVertexArray(0);
+
+	for (unsigned int i = 0; i < projectiles.size(); i++)
+	{
+		if (projectiles.at(i).z <= 0)
+			projectiles.erase(projectiles.begin()+i);
+	}
+	
 }
 
 int main()
