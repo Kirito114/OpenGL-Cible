@@ -12,10 +12,28 @@ uniform float xOffset;
 uniform float yOffset;
 uniform float xVibrate;
 uniform float yVibrate;
+uniform int nbDeformations;
+uniform float[50] xDeformations;
+uniform float[50] yDeformations;
+uniform bool wasTouched;
 
 void main()
 {
-	vec4 newPosition = vec4(position.x + xOffset + xVibrate, position.y + yOffset + yVibrate, position.z, 1.0f);
+	vec4 newPosition;
+	bool nearHole = false;
+	for (int i = 0; i < nbDeformations && !nearHole; i++)
+	{
+		float distance = (pow((position.x - xDeformations[i]), 2) + pow((position.y - yDeformations[i]), 2));
+		if ((distance < 50) && wasTouched)
+		{
+			newPosition = vec4(position.x + xOffset + xVibrate, position.y + yOffset + yVibrate, - 50 + distance, 1.0f);
+			nearHole = true;
+		}
+	}
+	if (!nearHole)
+	{
+		newPosition = vec4(position.x + xOffset + xVibrate, position.y + yOffset + yVibrate, position.z, 1.0f);
+	}
 	gl_Position = projection * view * model * newPosition;
 	TexCoord = vec2(texCoord.x,1.0 - texCoord.y);
 }

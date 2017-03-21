@@ -48,7 +48,13 @@ float xOffsetTemp;
 float yOffsetTemp;
 
 //Vibration de la cible
-bool touched = false;
+unsigned nbFramesVibrate = 0;
+
+//Deformations
+float xDeformations[50];
+float yDeformations[50];
+unsigned nbDeformations = 0;
+bool wasTouched = false;
 
 //Vision nocturne
 bool nightVision = false;
@@ -240,10 +246,11 @@ void render()
 	GLint xVibrateLoc = glGetUniformLocation(shader->Program, "xVibrate");
 	GLint yVibrateLoc = glGetUniformLocation(shader->Program, "yVibrate");
 
-	if (touched)
+	if (nbFramesVibrate > 0)
 	{
 		glUniform1f(xVibrateLoc, (rand() % 1000) / 500.0f);
 		glUniform1f(yVibrateLoc, (rand() % 1000) / 500.0f);
+		nbFramesVibrate--;
 	}
 	else
 	{
@@ -254,6 +261,10 @@ void render()
 	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 	glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+	glUniform1i(glGetUniformLocation(shader->Program, "nbDeformations"), nbDeformations);
+	glUniform1fv(glGetUniformLocation(shader->Program, "xDeformations"), 50, xDeformations);
+	glUniform1fv(glGetUniformLocation(shader->Program, "yDeformations"), 50, yDeformations);
+	glUniform1i(glGetUniformLocation(shader->Program, "wasTouched"), wasTouched);
 
 	//Render target
 	glBindVertexArray(vao_target);
@@ -288,15 +299,21 @@ void render()
 
 		//Render projectile
 		glDrawElements(GL_TRIANGLES, projectile.nbfaces * 3, GL_UNSIGNED_INT, 0);
+
+		if (projectiles.at(i).z <= 0)
+		{
+			if ((projectiles.at(i).x > (cible.min.x + xOffset + ((elapsedTime - timeBeginMove) / moveTime) * xOffsetTemp)) && (projectiles.at(i).x < (cible.max.x + xOffset + ((elapsedTime - timeBeginMove) / moveTime) * xOffsetTemp)) && (projectiles.at(i).y > (cible.min.y + yOffset + ((elapsedTime - timeBeginMove) / moveTime) * yOffsetTemp)) && (projectiles.at(i).y < (cible.max.y + yOffset + ((elapsedTime - timeBeginMove) / moveTime) * yOffsetTemp)) && (nbDeformations < 49))
+			{
+				xDeformations[nbDeformations] = projectiles.at(i).x - xOffset - ((elapsedTime - timeBeginMove) / moveTime) * xOffsetTemp;
+				yDeformations[nbDeformations] = projectiles.at(i).y - yOffset - ((elapsedTime - timeBeginMove) / moveTime) * yOffsetTemp;
+				nbDeformations++;
+				wasTouched = true;
+				nbFramesVibrate = 300;
+			}
+			projectiles.erase(projectiles.begin()+i);
+		}
 	}
 	glBindVertexArray(0);
-
-	for (unsigned int i = 0; i < projectiles.size(); i++)
-	{
-		if (projectiles.at(i).z <= 0)
-			projectiles.erase(projectiles.begin()+i);
-	}
-
 }
 
 int main()
