@@ -161,24 +161,33 @@ void render()
 	glm::mat4 view = glm::lookAt(glm::vec3(0.0f, 0.0f, 250.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 	glm::mat4 projection = glm::perspective(45.0f, (GLfloat)WIDTH / (GLfloat)HEIGHT, 0.1f, 300.0f);
 
+	int vision_mode;
+
 	if (visionMode == VisionMode::green)
 	{
-		shader = nightGreenShader;
+		//shader = nightGreenShader;
+		vision_mode = 2;
 	}
 	else if (visionMode == VisionMode::red)
 	{
-		shader = nightRedShader;
+		//shader = nightRedShader;
+		vision_mode = 1;
 	}
 	else
 	{
-		shader = normalShader;
+		//shader = normalShader;
+		vision_mode = 0;
 	}
+	shader = normalShader;
+	shader->use();
 
 	glActiveTexture(GL_TEXTURE0);
 	textureCible.use();
 	glUniform1i(glGetUniformLocation(shader->Program, "textureCible"), 0);
 
-	shader->use();
+	
+	GLint visionModeLoc = glGetUniformLocation(shader->Program, "vision_mode");
+	glUniform1i(visionModeLoc, vision_mode);
 
 	model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
 	view = glm::lookAt(glm::vec3(0.0f, 0.0f, 250.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
@@ -306,8 +315,8 @@ int main()
 	glClearColor(0.2, 0.2, 0.2, 1);
 
 	normalShader = new Shader("vertexShader.glsl", "fragmentShader.glsl");
-	nightGreenShader = new Shader("vertexShader.glsl", "nightGreenFragmentShader.glsl");
-	nightRedShader = new Shader("vertexShader.glsl", "nightRedFragmentShader.glsl");
+	//nightGreenShader = new Shader("vertexShader.glsl", "nightGreenFragmentShader.glsl");
+	//nightRedShader = new Shader("vertexShader.glsl", "nightRedFragmentShader.glsl");
 	shaderUVLess = new Shader("vertexShaderUVLess.glsl", "fragmentShaderUVLess.glsl");
 
 	while (!glfwWindowShouldClose(window))

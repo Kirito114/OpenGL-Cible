@@ -4,8 +4,14 @@ in vec2 TexCoord;
 out vec4 color;
 
 uniform sampler2D textureCible;
+uniform int vision_mode;
 
 void main()
 {
-	color = texture(textureCible,TexCoord);
+	if(vision_mode == 0)
+		color = texture(textureCible,TexCoord);
+	else if(vision_mode == 1)
+		color = texture(textureCible, TexCoord) * vec4(0.75, 0.2, 0.1, 1.0f);
+	else if(vision_mode == 2)
+		color = texture(textureCible, TexCoord) * vec4(0.1, 0.75, 0.2, 1.0f);
 }
