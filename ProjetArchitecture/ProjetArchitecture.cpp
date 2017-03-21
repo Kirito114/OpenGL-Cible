@@ -31,8 +31,6 @@ GLdouble MOUSE_X = 0, MOUSE_Y = 0, MOUSE_PRESSED_X = 0, MOUSE_PRESSED_Y = 0;
 
 //Shaders
 Shader * normalShader;
-Shader * nightGreenShader;
-Shader * nightRedShader;
 Shader * shaderUVLess;
 Shader * shader;
 
@@ -55,6 +53,25 @@ VisionMode visionMode = VisionMode::normal;
 //Projectile movement
 float last_frame_time = 0;
 std::vector<glm::vec3> projectiles;
+
+glm::vec3 getWorldPosition()
+{
+	float mouseX = MOUSE_PRESSED_X / (WIDTH * 0.5f) - 1.0f;
+	float mouseY = MOUSE_PRESSED_Y / (HEIGHT * 0.5f) - 1.0f;
+
+	std::cerr << mouseX << " " << mouseY << std::endl;
+
+	glm::mat4 proj = glm::perspective(45.0f, GLfloat(WIDTH) / GLfloat(HEIGHT), 0.1f, 300.0f);
+	glm::mat4 view = glm::lookAt(glm::vec3(0.0f, 0.0f, 250.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+	glm::mat4 invVP = glm::inverse(proj * view);
+	glm::vec4 screenPos = glm::vec4(mouseX, -mouseY, 1.0f, 1.0f);
+	glm::vec4 worldPos = invVP * screenPos;
+
+	glm::vec3 dir = glm::normalize(glm::vec3(worldPos));
+
+	return dir;
+}
 
 void key_callback(GLFWwindow * window, int key, int scancode, int action, int mode)
 {
@@ -79,7 +96,6 @@ void key_callback(GLFWwindow * window, int key, int scancode, int action, int mo
 
 void mouse_move_callback(GLFWwindow* window, double xpos, double ypos)
 {
-	//std::cerr << "GLFW::MOUSE::POSITION " << xpos << " " << ypos << std::endl;
 	MOUSE_X = xpos;
 	MOUSE_Y = ypos;
 }
@@ -88,11 +104,12 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
 	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
 	{
-		//std::cerr << "GLFW::MOUSE::BUTTON_PRESSED::LEFT_BUTTON" << std::endl;
-		std::cerr << "GLFW::MOUSE::POSITION " << MOUSE_X << " " << MOUSE_Y << std::endl;
+		//std::cerr << "GLFW::MOUSE::POSITION " << MOUSE_X << " " << MOUSE_Y << std::endl;
 		MOUSE_PRESSED_X = MOUSE_X;
 		MOUSE_PRESSED_Y = MOUSE_Y;
-		projectiles.push_back(glm::vec3((MOUSE_PRESSED_X-WIDTH/2.0)/5.5, (HEIGHT/2.0-MOUSE_PRESSED_Y)/5.5, 200));
+		glm::vec3 world_pos = getWorldPosition();
+		std::cerr << world_pos.x << " " << world_pos.y << " " << world_pos.z << std::endl;
+		projectiles.push_back(glm::vec3(world_pos.x,world_pos.y, 200));
 	}
 }
 
@@ -245,6 +262,7 @@ void render()
 
 	glBindVertexArray(0);
 
+
 	float elapsed_time = glfwGetTime() - last_frame_time;
 	last_frame_time = glfwGetTime();
 
@@ -262,8 +280,8 @@ void render()
 		model = glm::mat4();
 		model = glm::translate(model, projectiles.at(i));
 
-		projectiles.at(i).x += 0;
-		projectiles.at(i).y += 0;
+		projectiles.at(i).x += projectiles.at(i).x*elapsed_time;
+		projectiles.at(i).y += projectiles.at(i).y*elapsed_time;
 		projectiles.at(i).z += -70 * elapsed_time;
 		
 
@@ -325,8 +343,6 @@ int main()
 	glClearColor(0.2, 0.2, 0.2, 1);
 
 	normalShader = new Shader("vertexShader.glsl", "fragmentShader.glsl");
-	//nightGreenShader = new Shader("vertexShader.glsl", "nightGreenFragmentShader.glsl");
-	//nightRedShader = new Shader("vertexShader.glsl", "nightRedFragmentShader.glsl");
 	shaderUVLess = new Shader("vertexShaderUVLess.glsl", "fragmentShaderUVLess.glsl");
 
 	while (!glfwWindowShouldClose(window))
