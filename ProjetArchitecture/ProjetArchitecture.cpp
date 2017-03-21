@@ -243,7 +243,7 @@ void render()
 		if (200 - 120.0*elapsed_time < 0)
 			shoot_trigered = false;
 		model = glm::mat4();
-		model = glm::translate(model, glm::vec3(MOUSE_PRESSED_X-WIDTH/2.0, MOUSE_PRESSED_Y-HEIGHT/2.0, 200 - 120.0f*elapsed_time));
+		model = glm::translate(model, glm::vec3((MOUSE_PRESSED_X-WIDTH/2.0)/5.5*elapsed_time, (HEIGHT/2.0 - MOUSE_PRESSED_Y)/5.5*elapsed_time, 200 - 100.0f*elapsed_time));
 
 		shader = shaderUVLess;
 		glm::vec3 color(1.0f, 0.0f, 0.0f);

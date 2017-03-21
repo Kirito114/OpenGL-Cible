@@ -73,7 +73,10 @@
     <None Include="fragmentShaderUVLess.glsl">
       <Filter>Resource Files</Filter>
     </None>
-    <None Include="nightFragmentShader.glsl">
+    <None Include="nightGreenFragmentShader.glsl">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="nightRedFragmentShader.glsl">
       <Filter>Resource Files</Filter>
     </None>
   </ItemGroup>
