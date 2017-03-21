@@ -100,6 +100,8 @@ void key_callback(GLFWwindow * window, int key, int scancode, int action, int mo
 			visionMode = VisionMode::red;
 		}
 	}
+	else if (key == GLFW_KEY_R && action == GLFW_PRESS)
+		nbDeformations = 0;
 }
 
 void mouse_move_callback(GLFWwindow* window, double xpos, double ypos)
