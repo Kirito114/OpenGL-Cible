@@ -45,6 +45,15 @@ float yOffset = 0;
 float xOffsetTemp;
 float yOffsetTemp;
 
+//Vibration de la cible
+unsigned nbFramesVibrate = 0;
+
+//Deformations
+float xDeformations[50];
+float yDeformations[50];
+unsigned nbDeformations = 0;
+bool wasTouched = false;
+
 //Vision nocturne
 bool nightVision = false;
 enum VisionMode {red, green, normal};
@@ -139,7 +148,7 @@ void GeomInit()
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, cible.nbfaces * 3 * sizeof(unsigned int), (unsigned int *)cible.lfaces, GL_STATIC_DRAW);
 
 	glBindVertexArray(0);
-	
+
 	glGenVertexArrays(1, &vao_projectile);
 	glGenBuffers(1, &vbo_projectile);
 	glGenBuffers(1, &ebo_projectile);
@@ -148,7 +157,7 @@ void GeomInit()
 	glBindVertexArray(vao_projectile);
 
 	glBindBuffer(GL_ARRAY_BUFFER, vbo_projectile);
-	
+
 	glBufferData(GL_ARRAY_BUFFER, projectile.nbsommets * 5 * sizeof(float), (float *)projectile.lpoints, GL_STATIC_DRAW);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (GLvoid*)0);
 	glEnableVertexAttribArray(0);
@@ -158,7 +167,7 @@ void GeomInit()
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_projectile);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, projectile.nbfaces * 3 * sizeof(unsigned int), (unsigned int *)projectile.lfaces, GL_STATIC_DRAW);
-	
+
 	glBindVertexArray(0);
 
 	//Chargement de la texture
@@ -202,7 +211,7 @@ void render()
 	textureCible.use();
 	glUniform1i(glGetUniformLocation(shader->Program, "textureCible"), 0);
 
-	
+
 	GLint visionModeLoc = glGetUniformLocation(shader->Program, "vision_mode");
 	glUniform1i(visionModeLoc, vision_mode);
 
@@ -251,9 +260,28 @@ void render()
 		}
 	}
 
+	GLint xVibrateLoc = glGetUniformLocation(shader->Program, "xVibrate");
+	GLint yVibrateLoc = glGetUniformLocation(shader->Program, "yVibrate");
+
+	if (nbFramesVibrate > 0)
+	{
+		glUniform1f(xVibrateLoc, (rand() % 1000) / 500.0f);
+		glUniform1f(yVibrateLoc, (rand() % 1000) / 500.0f);
+		nbFramesVibrate--;
+	}
+	else
+	{
+		glUniform1f(xVibrateLoc, 0);
+		glUniform1f(yVibrateLoc, 0);
+	}
+
 	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 	glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+	glUniform1i(glGetUniformLocation(shader->Program, "nbDeformations"), nbDeformations);
+	glUniform1fv(glGetUniformLocation(shader->Program, "xDeformations"), 50, xDeformations);
+	glUniform1fv(glGetUniformLocation(shader->Program, "yDeformations"), 50, yDeformations);
+	glUniform1i(glGetUniformLocation(shader->Program, "wasTouched"), wasTouched);
 
 	//Render target
 	glBindVertexArray(vao_target);
@@ -283,21 +311,27 @@ void render()
 		projectiles.at(i).x += projectiles.at(i).x*elapsed_time;
 		projectiles.at(i).y += projectiles.at(i).y*elapsed_time;
 		projectiles.at(i).z += -70 * elapsed_time;
-		
+
 
 		glUniformMatrix4fv(glGetUniformLocation(shader->Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-		
+
 		//Render projectile
 		glDrawElements(GL_TRIANGLES, projectile.nbfaces * 3, GL_UNSIGNED_INT, 0);
+
+		if (projectiles.at(i).z <= 0)
+		{
+			if ((projectiles.at(i).x > (cible.min.x + xOffset + ((elapsedTime - timeBeginMove) / moveTime) * xOffsetTemp)) && (projectiles.at(i).x < (cible.max.x + xOffset + ((elapsedTime - timeBeginMove) / moveTime) * xOffsetTemp)) && (projectiles.at(i).y > (cible.min.y + yOffset + ((elapsedTime - timeBeginMove) / moveTime) * yOffsetTemp)) && (projectiles.at(i).y < (cible.max.y + yOffset + ((elapsedTime - timeBeginMove) / moveTime) * yOffsetTemp)) && (nbDeformations < 49))
+			{
+				xDeformations[nbDeformations] = projectiles.at(i).x - xOffset - ((elapsedTime - timeBeginMove) / moveTime) * xOffsetTemp;
+				yDeformations[nbDeformations] = projectiles.at(i).y - yOffset - ((elapsedTime - timeBeginMove) / moveTime) * yOffsetTemp;
+				nbDeformations++;
+				wasTouched = true;
+				nbFramesVibrate = 300;
+			}
+			projectiles.erase(projectiles.begin()+i);
+		}
 	}
 	glBindVertexArray(0);
-
-	for (unsigned int i = 0; i < projectiles.size(); i++)
-	{
-		if (projectiles.at(i).z <= 0)
-			projectiles.erase(projectiles.begin()+i);
-	}
-	
 }
 
 int main()
